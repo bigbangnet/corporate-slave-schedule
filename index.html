@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Calcul d'heures</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card-bg: #ffffff;
+    --text: #1c1e21;
+    --text-muted: #6b7280;
+    --border: #e2e4e9;
+    --accent: #2563eb;
+    --accent-soft: #eaf0ff;
+    --good: #15803d;
+    --good-soft: #e7f6ec;
+    --bad: #b91c1c;
+    --bad-soft: #fdecec;
+    --input-bg: #fafbfc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16181d;
+      --card-bg: #1f2229;
+      --text: #eceef1;
+      --text-muted: #9aa1ad;
+      --border: #33363f;
+      --accent: #5b8cff;
+      --accent-soft: #1c2740;
+      --good: #4ade80;
+      --good-soft: #14301f;
+      --bad: #f87171;
+      --bad-soft: #3a1a1a;
+      --input-bg: #262a32;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16181d;
+    --card-bg: #1f2229;
+    --text: #eceef1;
+    --text-muted: #9aa1ad;
+    --border: #33363f;
+    --accent: #5b8cff;
+    --accent-soft: #1c2740;
+    --good: #4ade80;
+    --good-soft: #14301f;
+    --bad: #f87171;
+    --bad-soft: #3a1a1a;
+    --input-bg: #262a32;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 16px;
+    padding-bottom: 60px;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; }
+  h1 {
+    font-size: 1.35rem;
+    margin: 4px 0 16px;
+    text-align: center;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .target-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .target-row label { font-weight: 600; font-size: 0.95rem; }
+  .target-row input {
+    width: 80px;
+    text-align: center;
+    font-size: 1rem;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text);
+  }
+
+  .day {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--card-bg);
+  }
+  .day.inactive { opacity: 0.5; }
+  .day-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .day-head .name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+  }
+  .day-head input[type="checkbox"] { width: 18px; height: 18px; }
+  .day-hours {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--accent);
+  }
+  .fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr 0.8fr;
+    gap: 8px;
+  }
+  .field label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+  }
+  .field input {
+    width: 100%;
+    padding: 8px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 0.95rem;
+  }
+  .field input:disabled {
+    opacity: 0.55;
+  }
+  .auto-toggle {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+  .auto-toggle input { width: 15px; height: 15px; }
+  .auto-note {
+    margin-top: 6px;
+    font-size: 0.82rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .summary {
+    text-align: center;
+  }
+  .summary .total {
+    font-size: 2rem;
+    font-weight: 800;
+  }
+  .summary .sub {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .pill {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  .pill.good { background: var(--good-soft); color: var(--good); }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
+  .pill.neutral { background: var(--accent-soft); color: var(--accent); }
+
+  .reset-btn {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .week-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .week-row label { font-weight: 600; font-size: 0.95rem; }
+  .week-row input {
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+
+  .history-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+  }
+  .history-empty {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 8px 0;
+  }
+  .history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-item .hi-date { font-weight: 600; }
+  .history-item .hi-total { color: var(--text-muted); }
+  .history-item .hi-diff.good { color: var(--good); font-weight: 700; }
+  .history-item .hi-diff.bad { color: var(--bad); font-weight: 700; }
+  .history-item .hi-del {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 1rem;
+    padding: 2px 6px;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--good);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    z-index: 50;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🕒 Calcul d'heures</h1>
+
+  <div class="card">
+    <div class="target-row">
+      <label for="target">Objectif hebdo (h)</label>
+      <input id="target" type="number" step="0.5" value="40">
+    </div>
+    <div class="week-row">
+      <label for="weekStart">Semaine du</label>
+      <input id="weekStart" type="date">
+    </div>
+  </div>
+
+  <div id="days"></div>
+
+  <div class="card summary">
+    <div class="sub">Total de la semaine</div>
+    <div class="total" id="totalHours">0h00</div>
+    <div id="pill" class="pill neutral">—</div>
+  </div>
+
+  <button class="reset-btn" id="resetBtn">✓ Enregistrer cette semaine et recommencer</button>
+
+  <div class="card">
+    <div class="history-title">Historique des semaines</div>
+    <div id="history"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DAY_NAMES = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+const STORAGE_KEY = "calcul-heures-v1";
+
+function mondayOf(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
+function blankDays() {
+  return DAY_NAMES.map((name, i) => ({
+    name,
+    active: i < 5,
+    start: "",
+    end: "",
+    lunch: i < 5 ? 30 : 0,
+    auto: false
+  }));
+}
+
+function defaultData() {
+  return {
+    target: 40,
+    weekStart: mondayOf(new Date()),
+    history: [],
+    days: DAY_NAMES.map((name, i) => ({
+      name,
+      active: i < 5,
+      start: "07:00",
+      end: i < 4 ? "16:00" : "14:00",
+      lunch: i < 5 ? 30 : 0,
+      auto: false
+    }))
+  };
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.days && parsed.days.length === 7) {
+        if (!parsed.history) parsed.history = [];
+        if (!parsed.weekStart) parsed.weekStart = mondayOf(new Date());
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn("Lecture localStorage impossible", e);
+  }
+  return defaultData();
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.warn("Sauvegarde localStorage impossible", e);
+  }
+}
+
+let state = loadData();
+
+function timeToMinutes(t) {
+  if (!t) return null;
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+function minutesToTime(mins) {
+  mins = Math.round(mins);
+  mins = ((mins % 1440) + 1440) % 1440;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+}
+function fmtHours(h) {
+  const sign = h < 0 ? "-" : "";
+  h = Math.abs(h);
+  const whole = Math.floor(h);
+  const mins = Math.round((h - whole) * 60);
+  return `${sign}${whole}h${String(mins).padStart(2,"0")}`;
+}
+
+function dayWorkedHours(day) {
+  if (!day.active) return 0;
+  const start = timeToMinutes(day.start);
+  const end = timeToMinutes(day.end);
+  if (start === null || end === null) return 0;
+  let diff = end - start;
+  if (diff < 0) diff += 1440; // au cas où ça passe minuit
+  const worked = (diff - (day.lunch || 0)) / 60;
+  return worked > 0 ? worked : 0;
+}
+
+function render() {
+  const container = document.getElementById("days");
+  container.innerHTML = "";
+
+  // Si un jour est en mode auto, calcule son heure de fin avant l'affichage
+  const autoIndex = state.days.findIndex(d => d.auto && d.active);
+  let autoWarning = "";
+  if (autoIndex !== -1) {
+    const target = parseFloat(state.target) || 0;
+    const othersTotal = state.days.reduce((sum, d, i) => i === autoIndex ? sum : sum + dayWorkedHours(d), 0);
+    const neededHours = target - othersTotal;
+    const day = state.days[autoIndex];
+    const start = timeToMinutes(day.start);
+    if (start === null) {
+      autoWarning = "Entre d'abord une heure de début pour cette journée.";
+    } else if (neededHours <= 0) {
+      autoWarning = "L'objectif est déjà atteint avec les autres journées.";
+      day.end = day.start;
+    } else if (neededHours > 16) {
+      autoWarning = "Remplis d'abord les heures des autres journées — sinon le calcul suppose qu'il te reste tout l'objectif à faire aujourd'hui.";
+    } else {
+      const endMinutes = start + neededHours * 60 + (day.lunch || 0);
+      day.end = minutesToTime(endMinutes);
+    }
+  }
+
+  state.days.forEach((day, i) => {
+    const worked = dayWorkedHours(day);
+    const div = document.createElement("div");
+    div.className = "day" + (day.active ? "" : " inactive");
+
+    div.innerHTML = `
+      <div class="day-head">
+        <div class="name">
+          <input type="checkbox" data-i="${i}" data-field="active" ${day.active ? "checked" : ""}>
+          ${day.name}
+        </div>
+        <div class="day-hours">${day.active ? fmtHours(worked) : "—"}</div>
+      </div>
+      <div class="fields">
+        <div class="field">
+          <label>Début</label>
+          <input type="time" data-i="${i}" data-field="start" value="${day.start}" ${day.active ? "" : "disabled"}>
+        </div>
+        <div class="field">
+          <label>Fin</label>
+          <input type="time" data-i="${i}" data-field="end" value="${day.end}" ${(day.active && !day.auto) ? "" : "disabled"}>
+        </div>
+        <div class="field">
+          <label>Dîner (min)</label>
+          <input type="number" min="0" step="5" data-i="${i}" data-field="lunch" value="${day.lunch}" ${day.active ? "" : "disabled"}>
+        </div>
+      </div>
+      <div class="auto-toggle">
+        <input type="checkbox" data-i="${i}" data-field="auto" ${day.auto ? "checked" : ""} ${day.active ? "" : "disabled"}>
+        <span>Calculer l'heure de fin automatiquement pour atteindre l'objectif</span>
+      </div>
+      ${day.auto && day.active ? `<div class="auto-note">${(autoIndex === i && autoWarning) ? autoWarning : "Fin calculée : " + day.end}</div>` : ""}
+    `;
+    container.appendChild(div);
+  });
+
+  container.querySelectorAll("input").forEach(input => {
+    input.addEventListener("input", onFieldChange);
+    input.addEventListener("change", onFieldChange);
+  });
+
+  updateSummary();
+  saveData();
+}
+
+function onFieldChange(e) {
+  const i = parseInt(e.target.dataset.i, 10);
+  const field = e.target.dataset.field;
+  const day = state.days[i];
+
+  if (field === "active") {
+    day.active = e.target.checked;
+  } else if (field === "auto") {
+    // un seul jour "auto" à la fois
+    if (e.target.checked) {
+      state.days.forEach(d => d.auto = false);
+      day.auto = true;
+    } else {
+      day.auto = false;
+    }
+  } else if (field === "lunch") {
+    day.lunch = parseFloat(e.target.value) || 0;
+  } else {
+    day[field] = e.target.value;
+  }
+  render();
+}
+
+function updateSummary() {
+  const target = parseFloat(document.getElementById("target").value) || 0;
+  state.target = target;
+  const total = state.days.reduce((sum, d) => sum + dayWorkedHours(d), 0);
+  document.getElementById("totalHours").textContent = fmtHours(total);
+
+  const pill = document.getElementById("pill");
+  const diff = total - target;
+  if (Math.abs(diff) < 0.01) {
+    pill.className = "pill good";
+    pill.textContent = "Objectif atteint ✓";
+  } else if (diff < 0) {
+    pill.className = "pill bad";
+    pill.textContent = `Il manque ${fmtHours(-diff)}`;
+  } else {
+    pill.className = "pill neutral";
+    pill.textContent = `${fmtHours(diff)} de plus que l'objectif`;
+  }
+}
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function showToast(msg) {
+  const toast = document.getElementById("toast");
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toast.classList.remove("show"), 2200);
+}
+
+function renderHistory() {
+  const container = document.getElementById("history");
+  if (!state.history || state.history.length === 0) {
+    container.innerHTML = `<div class="history-empty">Aucune semaine enregistrée pour l'instant.</div>`;
+    return;
+  }
+  container.innerHTML = state.history.map((entry, idx) => {
+    const diffClass = entry.diff >= -0.01 ? "good" : "bad";
+    const diffLabel = Math.abs(entry.diff) < 0.01
+      ? "objectif atteint"
+      : (entry.diff < 0 ? `manque ${fmtHours(-entry.diff)}` : `+${fmtHours(entry.diff)}`);
+    return `
+      <div class="history-item">
+        <div>
+          <div class="hi-date">Semaine du ${fmtDate(entry.weekStart)}</div>
+          <div class="hi-total">${fmtHours(entry.total)} / ${fmtHours(entry.target)}</div>
+        </div>
+        <div class="hi-diff ${diffClass}">${diffLabel}</div>
+        <button class="hi-del" data-idx="${idx}" title="Supprimer">✕</button>
+      </div>
+    `;
+  }).join("");
+
+  container.querySelectorAll(".hi-del").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      state.history.splice(idx, 1);
+      saveData();
+      renderHistory();
+    });
+  });
+}
+
+document.getElementById("target").addEventListener("input", () => { updateSummary(); saveData(); });
+
+document.getElementById("weekStart").addEventListener("change", (e) => {
+  state.weekStart = e.target.value;
+  saveData();
+});
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+  const target = parseFloat(state.target) || 0;
+  const total = state.days.reduce((sum, d) => sum + dayWorkedHours(d), 0);
+  const diff = total - target;
+
+  state.history.unshift({
+    weekStart: state.weekStart,
+    total,
+    target,
+    diff
+  });
+
+  state.days = blankDays();
+  const next = new Date(state.weekStart + "T00:00:00");
+  next.setDate(next.getDate() + 7);
+  state.weekStart = next.toISOString().slice(0, 10);
+
+  document.getElementById("weekStart").value = state.weekStart;
+  render();
+  renderHistory();
+  saveData();
+  showToast("Semaine enregistrée ✓");
+});
+
+document.getElementById("target").value = state.target;
+document.getElementById("weekStart").value = state.weekStart;
+render();
+renderHistory();
+</script>
+<script>
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+</script>
+</body>
+</html>
