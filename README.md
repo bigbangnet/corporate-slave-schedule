@@ -1,5 +1,5 @@
 # 🕒 Calcul d'heures
-![Screenshot](corporate slave schedule.png)
+<img src="corporate%20slave%20schedule.png" width="300" alt="Screenshot">
 Petite application pour calculer ses heures de travail de la semaine et voir s'il atteint son objectif. Elle fonctionne **sans Internet** et s'installe sur le téléphone comme une vraie app.
 
 ## Fonctionnalités
